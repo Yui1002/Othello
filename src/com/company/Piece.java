@@ -7,7 +7,7 @@ public class Piece implements Icon {
     private String color;
 
     /**
-     * Creates a piece with a specific color (white/black)
+     * Creates a piece with a color (black/white)
      * @param color color of the piece
      */
     public Piece(String color) {
@@ -23,7 +23,7 @@ public class Piece implements Icon {
     }
 
     /**
-     * Get the color of a specific piece
+     * Get the color of the piece
      * @return color of the piece
      */
     public String getPieceColor() {
@@ -33,9 +33,9 @@ public class Piece implements Icon {
     @Override
     public void paintIcon(Component c, Graphics g, int x, int y) {
         Graphics2D g2 = (Graphics2D) g.create();
-        if(color == "BLACK") {
+        if(color.equals("BLACK")) {
             g2.setColor(Color.BLACK);
-        } else if(color == "WHITE") {
+        } else if(color.equals("WHITE")) {
             g2.setColor(new Color(255,228,181));
         } else {
             g2.setColor(Color.WHITE);
