@@ -21,11 +21,12 @@ public class Othello extends JPanel implements ActionListener {
     private JPanel panel2;
     private JLabel label;
     private String message;
-    private String turn;
     private String stone;
     private String rev_stone;
     private int black_count;
     private int white_count;
+    private Player player1;
+    private Player player2;
 
     /**
      * Constructor for the Othello class, set up a board
@@ -36,9 +37,12 @@ public class Othello extends JPanel implements ActionListener {
         // player 2 : WHITE
         stone = "BLACK";
         rev_stone = "WHITE";
-        turn = "Player 1";
         black_count = 2;
         white_count = 2;
+
+        // set players (player1 is the first)
+        player1 = new Player("Player1", "BLACK", 2, true);
+        player2 = new Player("Player2", "WHITE", 2, false);
 
         // set up frame
         frame = new JFrame("Othello Game");
@@ -48,7 +52,7 @@ public class Othello extends JPanel implements ActionListener {
         panel1 = new JPanel(new FlowLayout());
         panel1.setPreferredSize(new Dimension(420, 150));
 
-        message = "<html><body><br />Player1: BLACK<br /> Player2: WHITE <br /><br /> Current turn: " + turn + "<br /><br /> Black: " + black_count + "<br /> White: " + white_count;
+        message = "<html><body><br />Player1: " + player1.getPlayerColor() + "<br /> Player2:" + player2.getPlayerColor() + "<br /><br /> Current turn: " + (player1.getTurn() ? player1.getPlayerName() : player2.getPlayerName()) + "<br /><br /> Black: " + player1.getPoints() + "<br /> White: " + player2.getPoints();
         label = new JLabel(message);
         panel1.add(label);
 
@@ -103,7 +107,7 @@ public class Othello extends JPanel implements ActionListener {
         loc = new Location(x, y);
         setLocation(loc, board[loc.x()][loc.y()]);
 
-        if(checkLocation(loc) && checkColor(getLocation(loc)) && !checkGameEnd(black_count, white_count)) {
+        if(checkLocation(loc) && checkColor(getLocation(loc)) && !checkGameEnd(player1.getPoints(), player2.getPoints())) {
             setPiece(loc, getLocation(loc));
         } else {
             System.out.println("You are not allowed to place here");
@@ -116,7 +120,7 @@ public class Othello extends JPanel implements ActionListener {
      * @param piece the piece selected
      */
     public void setLocation(Location loc, Piece piece) {
-         board[loc.x()][loc.y()] = piece;
+        board[loc.x()][loc.y()] = piece;
     }
 
     /**
@@ -150,9 +154,9 @@ public class Othello extends JPanel implements ActionListener {
      * Get the total of counts. Check if the game ends
      * @return true if the game ends, otherwise return false
      */
-    public boolean checkGameEnd(int blackCount, int whiteCount) {
-        int sum = blackCount + whiteCount;
-        return sum >= 64 || blackCount == 0 || whiteCount == 0;
+    public boolean checkGameEnd(int p1Pts, int p2Pts) {
+        int sum = p1Pts + p2Pts;
+        return sum >= 64 || p1Pts == 0 || p2Pts == 0;
     }
 
     /**
@@ -161,6 +165,7 @@ public class Othello extends JPanel implements ActionListener {
     public void updateCounts() {
         black_count = 0;
         white_count = 0;
+
         for(Piece[] b : board) {
             for(Piece p : b) {
                 if(p.getPieceColor().equals("BLACK")) {
@@ -170,17 +175,19 @@ public class Othello extends JPanel implements ActionListener {
                 }
             }
         }
+        player1.setPoints(black_count);
+        player2.setPoints(white_count);
         // update message
-        updateMessage(black_count, white_count);
+        updateMessage(player1.getPoints(), player2.getPoints());
     }
 
     /**
      * Update the message with updated each color counts
-     * @param blackCount the number of black pieces
-     * @param whiteCount the number of white pieces
+     * @param p1Pts the number of black pieces
+     * @param p2Pts the number of white pieces
      */
-    public void updateMessage(int blackCount, int whiteCount) {
-        message = "<html><body><br />Player1: BLACK<br /> Player2: WHITE <br /><br /> Current turn: " + turn + "<br /><br /> Black: " + blackCount + "<br /> White: " + whiteCount;
+    public void updateMessage(int p1Pts, int p2Pts) {
+        message = "<html><body><br />Player1: BLACK<br /> Player2: WHITE <br /><br /> Current turn: " + (player1.getTurn() ? player1.getPlayerName() : player2.getPlayerName()) + "<br /><br /> Black: " + p1Pts + "<br /> White: " + p2Pts;
         label.setText(message);
     }
 
@@ -190,21 +197,26 @@ public class Othello extends JPanel implements ActionListener {
      * @param piece The piece placed
      */
     public void setPiece(Location loc, Piece piece) {
-        if
-        (
-        !checkTop(loc, piece) &&
-        !checkBottom(loc, piece) &&
-        !checkLeft(loc, piece) &&
-        !checkRight(loc, piece) &&
-        !checkTopLeftDiagonal(loc, piece) &&
-        !checkTopRightDiagonal(loc, piece) &&
-        !checkBottomLeftDiagonal(loc, piece) &&
-        !checkBottomRightDiagonal(loc, piece)
-        ) {
-            System.out.println("You are not allowed to place here");
+        // check if right player's turn
+        System.out.println(player1.getTurn());
+        System.out.println(player2.getTurn());
+        System.out.println(stone);
+
+        boolean resultTop = checkTop(loc, piece);
+        boolean resultBottom = checkBottom(loc, piece);
+        boolean resultLeft = checkLeft(loc, piece);
+        boolean resultRight = checkRight(loc, piece);
+        boolean resultTopLeftDiagonal = checkTopLeftDiagonal(loc, piece);
+        boolean resultTopRightDiagonal = checkTopRightDiagonal(loc, piece);
+        boolean resultBottomLeftDiagonal = checkBottomLeftDiagonal(loc, piece);
+        boolean resultBottomRightDiagonal = checkBottomRightDiagonal(loc, piece);
+
+        if(!resultTop && !resultBottom && !resultLeft && !resultRight && !resultTopLeftDiagonal && !resultTopRightDiagonal && !resultBottomLeftDiagonal && !resultBottomRightDiagonal) {
+            System.out.println("Fucked up...");
         } else {
             // swap the player
-            turn = (turn.equals("Player 1")) ? "Player 2" : "Player 1";
+            player1.setTurn(!player1.getTurn());
+            player2.setTurn(!player2.getTurn());
 
             // swap the color
             String next_rev_stone = stone;

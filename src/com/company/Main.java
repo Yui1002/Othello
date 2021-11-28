@@ -1,8 +1,13 @@
 package com.company;
 
-public class Main {
+import javax.swing.*;
 
+/**
+ * This is the screen class for the game Othello
+ */
+public class Main {
     public static void main(String[] args) {
         new Othello();
     }
+
 }
