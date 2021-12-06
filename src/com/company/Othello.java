@@ -27,6 +27,7 @@ public class Othello extends JPanel implements ActionListener {
     private int white_count;
     private Player player1;
     private Player player2;
+    private boolean hasGameEnded;
 
     /**
      * Constructor for the Othello class, set up a board
@@ -39,6 +40,7 @@ public class Othello extends JPanel implements ActionListener {
         rev_stone = "WHITE";
         black_count = 2;
         white_count = 2;
+        hasGameEnded = false;
 
         // set players (player1 is the first)
         player1 = new Player("Player1", "BLACK", 2, true);
@@ -101,17 +103,36 @@ public class Othello extends JPanel implements ActionListener {
      */
     @Override
     public void actionPerformed(ActionEvent e) {
-        String coordinates = e.getActionCommand();
-        int x = Integer.parseInt(coordinates.substring(0, 1));
-        int y = Integer.parseInt(coordinates.substring(1));
+        String command = e.getActionCommand();
+
+        // Force click to change the color between the two pieces
+        if(command.startsWith("doClick")) {
+            int x = Integer.parseInt(command.substring(7, 8));
+            int y = Integer.parseInt(command.substring(8, 9));
+            String color = command.substring(9);
+
+            board[x][y].setPieceColor(color);
+            return;
+        }
+
+        int x = Integer.parseInt(command.substring(0, 1));
+        int y = Integer.parseInt(command.substring(1));
         loc = new Location(x, y);
         setLocation(loc, board[loc.x()][loc.y()]);
 
         if(checkLocation(loc) && checkColor(getLocation(loc)) && !checkGameEnd(player1.getPoints(), player2.getPoints())) {
             setPiece(loc, getLocation(loc));
         } else {
-            System.out.println("You are not allowed to place here");
+            System.out.println("You are not allowed to put here");
         }
+    }
+
+    public JButton[][] getGrid() {
+        return grid;
+    }
+
+    public Piece[][] getBoard() {
+        return board;
     }
 
     /**
@@ -156,13 +177,15 @@ public class Othello extends JPanel implements ActionListener {
      */
     public boolean checkGameEnd(int p1Pts, int p2Pts) {
         int sum = p1Pts + p2Pts;
+
         return sum >= 64 || p1Pts == 0 || p2Pts == 0;
     }
 
     /**
      * Update the number of each piece. Update the message.
      */
-    public void updateCounts() {
+    public int[] updateCounts() {
+        // count from zero
         black_count = 0;
         white_count = 0;
 
@@ -177,8 +200,33 @@ public class Othello extends JPanel implements ActionListener {
         }
         player1.setPoints(black_count);
         player2.setPoints(white_count);
+
         // update message
         updateMessage(player1.getPoints(), player2.getPoints());
+
+        // check if the game has ended
+        gameOverMessage(player1.getPoints(), player2.getPoints());
+
+        return new int[]{player1.getPoints(), player2.getPoints()};
+    }
+
+    /**
+     * Display a game over message
+     * @param p1Pts the points of player 1
+     * @param p2Pts the points of player 2
+     */
+    public String gameOverMessage(int p1Pts, int p2Pts) {
+        if(!checkGameEnd(p1Pts, p2Pts)) return null;
+
+        if(p1Pts == p2Pts) {
+            message = "<html><body><br /> Draw";
+        } else if(p1Pts > p2Pts) {
+            message = "<html><body><br />" + player1.getPlayerName() + " won!";
+        } else {
+            message = "<html><body><br />" + player2.getPlayerName() + " won!";
+        }
+        label.setText(message);
+        return message;
     }
 
     /**
@@ -186,21 +234,18 @@ public class Othello extends JPanel implements ActionListener {
      * @param p1Pts the number of black pieces
      * @param p2Pts the number of white pieces
      */
-    public void updateMessage(int p1Pts, int p2Pts) {
+    public String updateMessage(int p1Pts, int p2Pts) {
         message = "<html><body><br />Player1: BLACK<br /> Player2: WHITE <br /><br /> Current turn: " + (player1.getTurn() ? player1.getPlayerName() : player2.getPlayerName()) + "<br /><br /> Black: " + p1Pts + "<br /> White: " + p2Pts;
         label.setText(message);
+        return message;
     }
 
     /**
-     * Check for 8 directions to see if the piece is allowed to place the grid
+     * Check for 8 directions to see if the piece is allowed to put on the grid
      * @param loc The location where the piece was placed.
      * @param piece The piece placed
      */
     public void setPiece(Location loc, Piece piece) {
-        // check if right player's turn
-        System.out.println(player1.getTurn());
-        System.out.println(player2.getTurn());
-        System.out.println(stone);
 
         boolean resultTop = checkTop(loc, piece);
         boolean resultBottom = checkBottom(loc, piece);
@@ -212,7 +257,7 @@ public class Othello extends JPanel implements ActionListener {
         boolean resultBottomRightDiagonal = checkBottomRightDiagonal(loc, piece);
 
         if(!resultTop && !resultBottom && !resultLeft && !resultRight && !resultTopLeftDiagonal && !resultTopRightDiagonal && !resultBottomLeftDiagonal && !resultBottomRightDiagonal) {
-            System.out.println("Fucked up...");
+            System.out.println("You are not allowed to put here");
         } else {
             // swap the player
             player1.setTurn(!player1.getTurn());
@@ -246,11 +291,9 @@ public class Othello extends JPanel implements ActionListener {
 
                 if(board[loc.x() - i][loc.y()].getPieceColor().equals(stone)) {
                     for(int t = 1; t < i; t++) {
-                        if(stone.equals("BLACK")) {
-                            board[loc.x() - t][loc.y()].setPieceColor("BLACK");
-                        } else {
-                            board[loc.x() - t][loc.y()].setPieceColor("WHITE");
-                        }
+                        int locX = loc.x() - t;
+                        grid[loc.x() - t][loc.y()].setActionCommand("doClick" + locX + loc.y() + stone);
+                        grid[loc.x() - t][loc.y()].doClick();
                     }
                     piece.setPieceColor(stone);
                     return true;
@@ -272,11 +315,9 @@ public class Othello extends JPanel implements ActionListener {
 
                 if(board[loc.x() + i][loc.y()].getPieceColor().equals(stone)) {
                     for(int t = 1; t < i; t++) {
-                        if(stone.equals("BLACK")) {
-                            board[loc.x() + t][loc.y()].setPieceColor("BLACK");
-                        } else {
-                            board[loc.x() + t][loc.y()].setPieceColor("WHITE");
-                        }
+                        int locX = loc.x() + t;
+                        grid[loc.x() + t][loc.y()].setActionCommand("doClick" + locX + loc.y() + stone);
+                        grid[loc.x() + t][loc.y()].doClick();
                     }
                     piece.setPieceColor(stone);
                     return true;
@@ -298,11 +339,9 @@ public class Othello extends JPanel implements ActionListener {
 
                 if(board[loc.x()][loc.y() - i].getPieceColor().equals(stone)) {
                     for(int t = 1; t < i; t++) {
-                        if(stone.equals("BLACK")) {
-                            board[loc.x()][loc.y() - t].setPieceColor("BLACK");
-                        } else {
-                            board[loc.x()][loc.y() - t].setPieceColor("WHITE");
-                        }
+                        int locY = loc.y() - t;
+                        grid[loc.x()][loc.y() - t].setActionCommand("doClick" + loc.x() + locY + stone);
+                        grid[loc.x()][loc.y() - t].doClick();
                     }
                     piece.setPieceColor(stone);
                     return true;
@@ -324,11 +363,9 @@ public class Othello extends JPanel implements ActionListener {
 
                 if(board[loc.x()][loc.y() + i].getPieceColor().equals(stone)) {
                     for(int t = 1; t < i; t++) {
-                        if(stone.equals("BLACK")) {
-                            board[loc.x()][loc.y() + t].setPieceColor("BLACK");
-                        } else {
-                            board[loc.x()][loc.y() + t].setPieceColor("WHITE");
-                        }
+                        int locY = loc.y() + t;
+                        grid[loc.x()][loc.y() + t].setActionCommand("doClick" + loc.x() + locY + stone);
+                        grid[loc.x()][loc.y() + t].doClick();
                     }
                     piece.setPieceColor(stone);
                     return true;
@@ -350,11 +387,9 @@ public class Othello extends JPanel implements ActionListener {
 
                 if(board[loc.x() - i][loc.y() - i].getPieceColor().equals(stone)) {
                     for(int t = 1; t < i; t++) {
-                        if(stone.equals("BLACK")) {
-                            board[loc.x()- t][loc.y() - t].setPieceColor("BLACK");
-                        } else {
-                            board[loc.x() - t][loc.y() - t].setPieceColor("WHITE");
-                        }
+                        int locX = loc.x() - t, locY = loc.y() - t;
+                        grid[loc.x() - t][loc.y() - t].setActionCommand("doClick" + locX + locY + stone);
+                        grid[loc.x() - t][loc.y() - t].doClick();
                     }
                     piece.setPieceColor(stone);
                     return true;
@@ -371,17 +406,14 @@ public class Othello extends JPanel implements ActionListener {
 
         if(next.getPieceColor().equals(rev_stone)) {
             for(int i = 2; true; i++) {
-                if(loc.y() + i >= SIZE) return false;
-                if(loc.x() - i < 0) return false;
+                if(loc.y() + i >= SIZE || loc.x() - i < 0) return false;
                 if(board[loc.x() - i][loc.y() + i].getPieceColor().equals("UNSELECTED")) return false;
 
                 if(board[loc.x() - i][loc.y() + i].getPieceColor().equals(stone)) {
                     for(int t = 1; t < i; t++) {
-                        if(stone.equals("BLACK")) {
-                            board[loc.x()- t][loc.y() + t].setPieceColor("BLACK");
-                        } else {
-                            board[loc.x() - t][loc.y() + t].setPieceColor("WHITE");
-                        }
+                        int locX = loc.x() - t, locY = loc.y() + t;
+                        grid[loc.x() - t][loc.y() + t].setActionCommand("doClick" + locX + locY + stone);
+                        grid[loc.x() - t][loc.y() + t].doClick();
                     }
                     piece.setPieceColor(stone);
                     return true;
@@ -398,17 +430,14 @@ public class Othello extends JPanel implements ActionListener {
 
         if(next.getPieceColor().equals(rev_stone)) {
             for(int i = 2; true; i++) {
-                if(loc.y() - i < 0) return false;
-                if(loc.x() + i >= SIZE) return false;
+                if(loc.y() - i < 0 || loc.x() + i >= SIZE) return false;
                 if(board[loc.x() + i][loc.y() - i].getPieceColor().equals("UNSELECTED")) return false;
 
                 if(board[loc.x() + i][loc.y() - i].getPieceColor().equals(stone)) {
                     for(int t = 1; t < i; t++) {
-                        if(stone.equals("BLACK")) {
-                            board[loc.x() + t][loc.y() - t].setPieceColor("BLACK");
-                        } else {
-                            board[loc.x() + t][loc.y() - t].setPieceColor("WHITE");
-                        }
+                        int locX = loc.x() + t, locY = loc.y() - t;
+                        grid[loc.x() + t][loc.y() - t].setActionCommand("doClick" + locX + locY + stone);
+                        grid[loc.x() + t][loc.y() - t].doClick();
                     }
                     piece.setPieceColor(stone);
                     return true;
@@ -425,17 +454,14 @@ public class Othello extends JPanel implements ActionListener {
 
         if(next.getPieceColor().equals(rev_stone)) {
             for(int i = 2; true; i++) {
-                if(loc.y() + i >= SIZE) return false;
-                if(loc.x() + i >= SIZE) return false;
+                if(loc.y() + i >= SIZE || loc.x() + i >= SIZE) return false;
                 if(board[loc.x() + i][loc.y() + i].getPieceColor().equals("UNSELECTED")) return false;
 
                 if(board[loc.x() + i][loc.y() + i].getPieceColor().equals(stone)) {
                     for(int t = 1; t < i; t++) {
-                        if(stone.equals("BLACK")) {
-                            board[loc.x() + t][loc.y() + t].setPieceColor("BLACK");
-                        } else {
-                            board[loc.x() + t][loc.y() + t].setPieceColor("WHITE");
-                        }
+                        int locX = loc.x() + t, locY = loc.y() + t;
+                        grid[loc.x() + t][loc.y() + t].setActionCommand("doClick" + locX + locY + stone);
+                        grid[loc.x() + t][loc.y() + t].doClick();
                     }
                     piece.setPieceColor(stone);
                     return true;

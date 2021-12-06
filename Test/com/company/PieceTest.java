@@ -1,16 +1,18 @@
 package com.company;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.CoreMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the Piece class
  */
 public class PieceTest {
+
     @Test
-    public void testPieceClass() {
-        Piece piece = new Piece("BLACK");
-        assertThat(piece.getPieceColor(), is("BLACK"));
+    public void shouldCreatePieceColor() {
+        Piece piece = new Piece("UNSELECTED");
+        piece.setPieceColor("BLACK");
+        assertEquals("BLACK", piece.getPieceColor());
     }
 }
